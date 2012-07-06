@@ -1,0 +1,35 @@
+#!/usr/bin/php
+<?
+
+/* Check that the commit file sizes meet the limits. */
+
+$stdin = fopen('php://stdin', 'r');
+while ($line = fgets($stdin)) {
+	list($old, $new, $ref) = preg_split('/\\s+/', $line);
+	if ($ref != 'refs/heads/master') {
+		echo "branches are not supported\n";
+		exit(1);
+	}
+	$commits = array();
+	if (substr_count($old, '0') == strlen($old)) {
+		exec("git log --pretty=%H $new", $commits);
+	} else {
+		exec("git log --pretty=%H $old..$new", $commits);
+	}
+	foreach ($commits as $commit) {
+		$files = array();
+		exec("git ls-tree -lr $commit", $files);
+		$total_size = 0;
+		foreach ($files as $file) {
+			list($_, $type, $_, $size, $_) = preg_split('/\\s+/', $file);
+			if ($type == 'blob') {
+				$total_size += intval($size);
+			}
+		}
+		$repo_limit = intval(exec('git config scigit.repo.limit'));
+		if ($total_size > $repo_limit) {
+			echo "commit $commit is too large ({$total_size} bytes)\n";
+			exit(1);
+		}
+	}
+}
