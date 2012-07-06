@@ -24,7 +24,7 @@ while ($line = fgets($stdin)) {
 		$msg = addslashes($msg);
 		$q = mysql_query('INSERT INTO proj_changes '.
 			'(proj_id, user_id, commit_msg, commit_hash, commit_ts) VALUES '.
-			"($repo_id, $user_id, '$msg', '$hash', FROM_UNIXTIME($date))");
+			"($repo_id, $user_id, '$msg', '$hash', $date)");
 		if (!$q) {
 			echo "Failed to insert commit into database\n";
 			exit(1);
