@@ -9,11 +9,27 @@ scigit_db_connect();
 $repo_id = intval(exec('git config scigit.repo.id'));
 $user_id = intval(substr(getenv('GL_USER'), 1));
 
+// Get the last saved commit
+$q = mysql_query('SELECT commit_hash FROM proj_changes ' .
+	"WHERE proj_id = $repo_id ORDER BY id DESC LIMIT 1");
+if (!$q) {
+	echo 'DB error: ' . mysql_error() . "\n";
+	exit(1);
+}
+$old = '';
+if ($r = mysql_fetch_assoc($q)) {
+	$old = $r['commit_hash'];
+}
+
+// Insert new commits into database
 $stdin = fopen('php://stdin', 'r');
 while ($line = fgets($stdin)) {
-	list($old, $new, $ref) = preg_split('/\\s+/', $line);
+	list($_, $new, $ref) = preg_split('/\\s+/', $line);
+	if ($ref != 'refs/heads/master') {
+		exit(1);
+	}
 	$commits = array();
-	if (substr_count($old, '0') == strlen($old)) {
+	if ($old == '') {
 		exec("git log --pretty='%H %at %s' $new", $commits);
 	} else {
 		exec("git log --pretty='%H %at %s' $old..$new", $commits);
@@ -26,12 +42,13 @@ while ($line = fgets($stdin)) {
 			'(proj_id, user_id, commit_msg, commit_hash, commit_ts) VALUES '.
 			"($repo_id, $user_id, '$msg', '$hash', $date)");
 		if (!$q) {
-			echo "Failed to insert commit into database\n";
+			echo 'DB error: ' . mysql_error() . "\n";
 			exit(1);
 		}
 	}
 }
 
+// Pull into local accessible repository
 chdir(SCIGIT_REPO_DIR);
 $repo_name = 'r'.$repo_id;
 if (is_dir($repo_name)) {
