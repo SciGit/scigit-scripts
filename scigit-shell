@@ -1,0 +1,48 @@
+#!/usr/bin/php
+<?
+
+require_once '/var/scigit/include/scigit.php';
+
+function error($str) {
+	$stderr = fopen('php://stderr', 'w');
+	fprintf($stderr, "scigit: $str\n");
+	exit(1);
+}
+
+function check_permissions($proj_id, $user_id, $write) {
+	scigit_db_connect();
+	$q = mysql_query("SELECT * FROM proj_permissions ".
+		"WHERE proj_id = $proj_id AND user_id = $user_id");
+	if (!$q) error('Database error: ' . mysql_error());
+	if ($r = mysql_fetch_assoc($q)) {
+		if (!$write || $r['can_write']) {
+			return;
+		}
+	}
+	error('not authorized (or wrong repository)');
+}
+
+// get user id
+if (!preg_match('/^u([0-9]+)$/', $argv[1], $matches)) {
+	error("Invalid user id");
+}
+$user_id = $matches[1];
+
+// parse git command for repository
+$soc = getenv('SSH_ORIGINAL_COMMAND');
+
+$git_commands = "git-upload-pack|git-receive-pack|git-upload-archive";
+if (!preg_match("/^($git_commands) '(.*?)(\.git)?'$/", $soc, $matches)) {
+	error("Invalid git command");
+}
+
+$verb = $matches[1];
+$repo_name = $matches[2];
+if (!preg_match('/^r([0-9]+)$/', $repo_name, $matches)) {
+	error("Invalid repository");
+}
+$repo_id = $matches[1];
+
+check_permissions($repo_id, $user_id, strpos($verb, 'upload') !== false);
+
+pcntl_exec("/usr/bin/git", array("shell", "-c", "$verb 'repositories/$repo_name'"));

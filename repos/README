@@ -1,0 +1,2 @@
+This folder stores working copies of the SciGit repositories.
+The ones kept by git are bare repositories, so their files are not easily accessible.
