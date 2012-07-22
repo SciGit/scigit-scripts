@@ -27,7 +27,7 @@ try:
  
   # Connect!
   transport.open()
-  client.addPublicKey(1, "test")
+  client.createRepository(9)
   transport.close()
  
 except Thrift.TException, tx:
