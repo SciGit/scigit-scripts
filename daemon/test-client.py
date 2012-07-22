@@ -27,7 +27,7 @@ try:
  
   # Connect!
   transport.open()
-  client.createRepository(9)
+  client.createRepository(8)
   transport.close()
  
 except Thrift.TException, tx:

@@ -18,6 +18,7 @@ import argparse
 import MySQLdb
 
 class RepositoryManagerHandler:
+	SCIGIT_DIR = '/var/scigit'
 	GIT_REPO_DIR = '/home/git/repositories'
 	SCIGIT_REPO_DIR = '/var/scigit/repos'
 
@@ -46,7 +47,7 @@ class RepositoryManagerHandler:
 		lines = []
 		options = 'no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty'
 		self_key_file = open('/home/git/.ssh/id_rsa.pub', 'r')
-		lines.append('command="/usr/local/bin/scigit-shell localhost",%s %s' %\
+		lines.append('command="/usr/local/bin/scigit-shell u0",%s %s' %\
 					(options, self_key_file.readline().strip()))
 		self_key_file.close()
 
@@ -72,7 +73,15 @@ class RepositoryManagerHandler:
 		dir = '%s/r%d.git' % (self.GIT_REPO_DIR, repoId)
 		if os.path.isdir(dir) == False:
 			os.mkdir(dir, 0700)
-			os.system('cd %s; git init --bare' % dir)
+			config = {
+				'core.fileMode': 'false',
+				'scigit.repo.id': repoId,
+				'scigit.repo.limit': 16 * 1024 * 1024
+			}
+			config_commands = '; '.join(['git config %s %s' % (key, config[key]) for key in config])
+			os.system('cd %s; git init --bare; %s' % (dir, config_commands))
+			os.symlink('%s/hooks/pre-receive' % self.SCIGIT_DIR, '%s/hooks/pre-receive' % dir)
+			os.symlink('%s/hooks/post-receive' % self.SCIGIT_DIR, '%s/hooks/post-receive' % dir)
 
 	def deleteRepository(self, repoId):
 		self.log('deleteRepository: %d' % repoId)

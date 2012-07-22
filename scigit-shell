@@ -24,7 +24,7 @@ function check_permissions($proj_id, $user_id, $write) {
 
 // get user id
 if (!preg_match('/^u([0-9]+)$/', $argv[1], $matches)) {
-	error("Invalid user id");
+	error("Invalid user id $argv[1]");
 }
 $user_id = $matches[1];
 
@@ -43,6 +43,9 @@ if (!preg_match('/^r([0-9]+)$/', $repo_name, $matches)) {
 }
 $repo_id = $matches[1];
 
-check_permissions($repo_id, $user_id, strpos($verb, 'upload') !== false);
+if ($user_id != 0) {
+	check_permissions($repo_id, $user_id, strpos($verb, 'upload') !== false);
+}
 
+putenv("SCIGIT_USER_ID=$user_id");
 pcntl_exec("/usr/bin/git", array("shell", "-c", "$verb 'repositories/$repo_name'"));

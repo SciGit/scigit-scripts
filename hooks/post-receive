@@ -7,7 +7,7 @@ require_once '/var/scigit/include/scigit.php';
 
 scigit_db_connect();
 $repo_id = intval(exec('git config scigit.repo.id'));
-$user_id = intval(substr(getenv('GL_USER'), 1));
+$user_id = intval(getenv('SCIGIT_USER_ID'));
 
 // Get the last saved commit
 $q = mysql_query('SELECT commit_hash FROM proj_changes ' .
