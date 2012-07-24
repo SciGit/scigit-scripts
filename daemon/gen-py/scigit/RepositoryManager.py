@@ -18,17 +18,19 @@ except:
 
 
 class Iface:
-  def addPublicKey(self, userId, publicKey):
+  def addPublicKey(self, keyId, userId, publicKey):
     """
     Parameters:
+     - keyId
      - userId
      - publicKey
     """
     pass
 
-  def deletePublicKey(self, userId, publicKey):
+  def deletePublicKey(self, keyId, userId, publicKey):
     """
     Parameters:
+     - keyId
      - userId
      - publicKey
     """
@@ -56,18 +58,20 @@ class Client(Iface):
       self._oprot = oprot
     self._seqid = 0
 
-  def addPublicKey(self, userId, publicKey):
+  def addPublicKey(self, keyId, userId, publicKey):
     """
     Parameters:
+     - keyId
      - userId
      - publicKey
     """
-    self.send_addPublicKey(userId, publicKey)
+    self.send_addPublicKey(keyId, userId, publicKey)
     self.recv_addPublicKey()
 
-  def send_addPublicKey(self, userId, publicKey):
+  def send_addPublicKey(self, keyId, userId, publicKey):
     self._oprot.writeMessageBegin('addPublicKey', TMessageType.CALL, self._seqid)
     args = addPublicKey_args()
+    args.keyId = keyId
     args.userId = userId
     args.publicKey = publicKey
     args.write(self._oprot)
@@ -86,18 +90,20 @@ class Client(Iface):
     self._iprot.readMessageEnd()
     return
 
-  def deletePublicKey(self, userId, publicKey):
+  def deletePublicKey(self, keyId, userId, publicKey):
     """
     Parameters:
+     - keyId
      - userId
      - publicKey
     """
-    self.send_deletePublicKey(userId, publicKey)
+    self.send_deletePublicKey(keyId, userId, publicKey)
     self.recv_deletePublicKey()
 
-  def send_deletePublicKey(self, userId, publicKey):
+  def send_deletePublicKey(self, keyId, userId, publicKey):
     self._oprot.writeMessageBegin('deletePublicKey', TMessageType.CALL, self._seqid)
     args = deletePublicKey_args()
+    args.keyId = keyId
     args.userId = userId
     args.publicKey = publicKey
     args.write(self._oprot)
@@ -202,7 +208,7 @@ class Processor(Iface, TProcessor):
     args.read(iprot)
     iprot.readMessageEnd()
     result = addPublicKey_result()
-    self._handler.addPublicKey(args.userId, args.publicKey)
+    self._handler.addPublicKey(args.keyId, args.userId, args.publicKey)
     oprot.writeMessageBegin("addPublicKey", TMessageType.REPLY, seqid)
     result.write(oprot)
     oprot.writeMessageEnd()
@@ -213,7 +219,7 @@ class Processor(Iface, TProcessor):
     args.read(iprot)
     iprot.readMessageEnd()
     result = deletePublicKey_result()
-    self._handler.deletePublicKey(args.userId, args.publicKey)
+    self._handler.deletePublicKey(args.keyId, args.userId, args.publicKey)
     oprot.writeMessageBegin("deletePublicKey", TMessageType.REPLY, seqid)
     result.write(oprot)
     oprot.writeMessageEnd()
@@ -247,17 +253,20 @@ class Processor(Iface, TProcessor):
 class addPublicKey_args:
   """
   Attributes:
+   - keyId
    - userId
    - publicKey
   """
 
   thrift_spec = (
     None, # 0
-    (1, TType.I32, 'userId', None, None, ), # 1
-    (2, TType.STRING, 'publicKey', None, None, ), # 2
+    (1, TType.I32, 'keyId', None, None, ), # 1
+    (2, TType.I32, 'userId', None, None, ), # 2
+    (3, TType.STRING, 'publicKey', None, None, ), # 3
   )
 
-  def __init__(self, userId=None, publicKey=None,):
+  def __init__(self, keyId=None, userId=None, publicKey=None,):
+    self.keyId = keyId
     self.userId = userId
     self.publicKey = publicKey
 
@@ -272,10 +281,15 @@ class addPublicKey_args:
         break
       if fid == 1:
         if ftype == TType.I32:
-          self.userId = iprot.readI32();
+          self.keyId = iprot.readI32();
         else:
           iprot.skip(ftype)
       elif fid == 2:
+        if ftype == TType.I32:
+          self.userId = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 3:
         if ftype == TType.STRING:
           self.publicKey = iprot.readString();
         else:
@@ -290,12 +304,16 @@ class addPublicKey_args:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
     oprot.writeStructBegin('addPublicKey_args')
+    if self.keyId is not None:
+      oprot.writeFieldBegin('keyId', TType.I32, 1)
+      oprot.writeI32(self.keyId)
+      oprot.writeFieldEnd()
     if self.userId is not None:
-      oprot.writeFieldBegin('userId', TType.I32, 1)
+      oprot.writeFieldBegin('userId', TType.I32, 2)
       oprot.writeI32(self.userId)
       oprot.writeFieldEnd()
     if self.publicKey is not None:
-      oprot.writeFieldBegin('publicKey', TType.STRING, 2)
+      oprot.writeFieldBegin('publicKey', TType.STRING, 3)
       oprot.writeString(self.publicKey)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -361,17 +379,20 @@ class addPublicKey_result:
 class deletePublicKey_args:
   """
   Attributes:
+   - keyId
    - userId
    - publicKey
   """
 
   thrift_spec = (
     None, # 0
-    (1, TType.I32, 'userId', None, None, ), # 1
-    (2, TType.STRING, 'publicKey', None, None, ), # 2
+    (1, TType.I32, 'keyId', None, None, ), # 1
+    (2, TType.I32, 'userId', None, None, ), # 2
+    (3, TType.STRING, 'publicKey', None, None, ), # 3
   )
 
-  def __init__(self, userId=None, publicKey=None,):
+  def __init__(self, keyId=None, userId=None, publicKey=None,):
+    self.keyId = keyId
     self.userId = userId
     self.publicKey = publicKey
 
@@ -386,10 +407,15 @@ class deletePublicKey_args:
         break
       if fid == 1:
         if ftype == TType.I32:
-          self.userId = iprot.readI32();
+          self.keyId = iprot.readI32();
         else:
           iprot.skip(ftype)
       elif fid == 2:
+        if ftype == TType.I32:
+          self.userId = iprot.readI32();
+        else:
+          iprot.skip(ftype)
+      elif fid == 3:
         if ftype == TType.STRING:
           self.publicKey = iprot.readString();
         else:
@@ -404,12 +430,16 @@ class deletePublicKey_args:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
     oprot.writeStructBegin('deletePublicKey_args')
+    if self.keyId is not None:
+      oprot.writeFieldBegin('keyId', TType.I32, 1)
+      oprot.writeI32(self.keyId)
+      oprot.writeFieldEnd()
     if self.userId is not None:
-      oprot.writeFieldBegin('userId', TType.I32, 1)
+      oprot.writeFieldBegin('userId', TType.I32, 2)
       oprot.writeI32(self.userId)
       oprot.writeFieldEnd()
     if self.publicKey is not None:
-      oprot.writeFieldBegin('publicKey', TType.STRING, 2)
+      oprot.writeFieldBegin('publicKey', TType.STRING, 3)
       oprot.writeString(self.publicKey)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()

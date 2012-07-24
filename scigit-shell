@@ -3,6 +3,8 @@
 
 require_once '/var/scigit/include/scigit.php';
 
+scigit_db_connect();
+
 function error($str) {
 	$stderr = fopen('php://stderr', 'w');
 	fprintf($stderr, "scigit: $str\n");
@@ -10,7 +12,6 @@ function error($str) {
 }
 
 function check_permissions($proj_id, $user_id, $write) {
-	scigit_db_connect();
 	$q = mysql_query("SELECT * FROM proj_permissions ".
 		"WHERE proj_id = $proj_id AND user_id = $user_id");
 	if (!$q) error('Database error: ' . mysql_error());
@@ -27,6 +28,14 @@ if (!preg_match('/^u([0-9]+)$/', $argv[1], $matches)) {
 	error("Invalid user id $argv[1]");
 }
 $user_id = $matches[1];
+
+$pkey_id = intval($argv[2]);
+$q = mysql_query("SELECT * FROM user_pub_keys WHERE ".
+		"id = $pkey_id AND user_id = $user_id");
+if (!$q) error('Database error: ' . mysql_error());
+if (mysql_num_rows($q) == 0) {
+	error('Permission denied (publickey)');
+}
 
 // parse git command for repository
 $soc = getenv('SSH_ORIGINAL_COMMAND');
