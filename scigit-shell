@@ -29,12 +29,14 @@ if (!preg_match('/^u([0-9]+)$/', $argv[1], $matches)) {
 }
 $user_id = $matches[1];
 
-$pkey_id = intval($argv[2]);
-$q = mysql_query("SELECT * FROM user_pub_keys WHERE ".
-		"id = $pkey_id AND user_id = $user_id");
-if (!$q) error('Database error: ' . mysql_error());
-if (mysql_num_rows($q) == 0) {
-	error('Permission denied (publickey)');
+if ($user_id != 0) {
+	$pkey_id = intval($argv[2]);
+	$q = mysql_query("SELECT * FROM user_pub_keys WHERE ".
+			"id = $pkey_id AND user_id = $user_id");
+	if (!$q) error('Database error: ' . mysql_error());
+	if (mysql_num_rows($q) == 0) {
+		error('Permission denied (publickey)');
+	}
 }
 
 // parse git command for repository
