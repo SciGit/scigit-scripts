@@ -1,35 +1,33 @@
-#!/usr/bin/php
-<?
+#!/usr/bin/python27
+# Check that the commit file sizes meet the limits.
 
-/* Check that the commit file sizes meet the limits. */
+import os, sys
+import subprocess
 
-$stdin = fopen('php://stdin', 'r');
-while ($line = fgets($stdin)) {
-	list($old, $new, $ref) = preg_split('/\\s+/', $line);
-	if ($ref != 'refs/heads/master') {
-		echo "branches are not supported\n";
-		exit(1);
-	}
-	$commits = array();
-	if (substr_count($old, '0') == strlen($old)) {
-		exec("git log --pretty=%H $new", $commits);
-	} else {
-		exec("git log --pretty=%H $old..$new", $commits);
-	}
-	foreach ($commits as $commit) {
-		$files = array();
-		exec("git ls-tree -lr $commit", $files);
-		$total_size = 0;
-		foreach ($files as $file) {
-			list($_, $type, $_, $size, $_) = preg_split('/\\s+/', $file);
-			if ($type == 'blob') {
-				$total_size += intval($size);
-			}
-		}
-		$repo_limit = intval(exec('git config scigit.repo.limit'));
-		if ($total_size > $repo_limit) {
-			echo "commit $commit is too large ({$total_size} bytes)\n";
-			exit(1);
-		}
-	}
-}
+def error(msg):
+	sys.stderr.write("scigit: %s\n" % msg)
+	sys.exit(1)
+
+for line in sys.stdin.readlines():
+	old, new, ref = line.split()
+	if ref != 'refs/heads/master':
+		error('branches are not supported')
+
+	args = []
+	if old.count('0') == len(old):
+		args = ['git', 'log', '--pretty=%H', new]
+	else:
+		args = ['git', 'log', '--pretty=%H', old + '..' + new]
+	commits = subprocess.check_output(args).split()
+
+	for commit in commits:
+		output = subprocess.check_output(['git', 'ls-tree', '-lr', commit])
+		total_size = 0
+		for file in output.strip().splitlines():
+			_, type, _, size, _ = file.split(None, 4)
+			if type == 'blob':
+				total_size += int(size)
+
+	repo_limit = int(subprocess.check_output(['git', 'config', 'scigit.repo.limit']))
+	if total_size > repo_limit:
+		error("commit %s is too large (%d bytes)" % (commit, total_size))

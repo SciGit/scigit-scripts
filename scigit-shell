@@ -2,6 +2,7 @@
 
 import os, sys
 import re
+import subprocess
 import MySQLdb
 
 def error(msg):
@@ -49,4 +50,4 @@ if userid != 0:
 		error('not authorized (or wrong repository)')
 
 os.environ['SCIGIT_USER_ID'] = str(userid)
-os.system("/usr/bin/git shell -c \"%s 'repositories/%s'\"" % (verb, repo))
+subprocess.call(["/usr/bin/git", "shell", "-c", "%s 'repositories/%s'" % (verb, repo)])
