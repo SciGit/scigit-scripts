@@ -13,7 +13,6 @@ from thrift.server import TServer
 
 import os, shutil
 import socket
-import getopt
 import argparse
 import MySQLdb
 

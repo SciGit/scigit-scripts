@@ -1,62 +1,52 @@
-#!/usr/bin/php
-<?
+#!/usr/bin/python27
 
-require_once '/var/scigit/include/scigit.php';
+import os, sys
+import re
+import MySQLdb
 
-scigit_db_connect();
+def error(msg):
+	sys.stderr.write("scigit: %s\n" % msg)
+	sys.exit(1)
 
-function error($str) {
-	$stderr = fopen('php://stderr', 'w');
-	fprintf($stderr, "scigit: $str\n");
-	exit(1);
-}
+dbc = MySQLdb.connect(user='scigit', passwd='scigit', db='scigit')
 
-function check_permissions($proj_id, $user_id, $write) {
-	$q = mysql_query("SELECT * FROM proj_permissions ".
-		"WHERE proj_id = $proj_id AND user_id = $user_id");
-	if (!$q) error('Database error: ' . mysql_error());
-	if ($r = mysql_fetch_assoc($q)) {
-		if (!$write || $r['can_write']) {
-			return;
-		}
-	}
-	error('not authorized (or wrong repository)');
-}
+if len(sys.argv) != 3:
+	error('invalid arguments')
+user = sys.argv[1]
+match = re.search('^u([0-9]+)$', user)
+if match == None:
+	error('invalid user')
+userid = int(match.group(1))
 
-// get user id
-if (!preg_match('/^u([0-9]+)$/', $argv[1], $matches)) {
-	error("Invalid user id $argv[1]");
-}
-$user_id = $matches[1];
+if userid != 0:
+	pkeyid = int(sys.argv[2])
+	cursor = dbc.cursor()
+	cursor.execute("""SELECT id FROM user_pub_keys
+		WHERE id = %s AND user_id = %s""", (pkeyid, userid))
+	if cursor.fetchone() == None:
+		error('Permission denied (publickey)')
 
-if ($user_id != 0) {
-	$pkey_id = intval($argv[2]);
-	$q = mysql_query("SELECT * FROM user_pub_keys WHERE ".
-			"id = $pkey_id AND user_id = $user_id");
-	if (!$q) error('Database error: ' . mysql_error());
-	if (mysql_num_rows($q) == 0) {
-		error('Permission denied (publickey)');
-	}
-}
+soc = os.getenv('SSH_ORIGINAL_COMMAND')
+git_commands = 'git-upload-pack|git-receive-pack|git-upload-archive'
+match = re.search("^(%s) '(.*?)(\.git)?'$" % git_commands, soc)
+if match == None:
+	error("Invalid git command")
 
-// parse git command for repository
-$soc = getenv('SSH_ORIGINAL_COMMAND');
+verb = match.group(1)
+repo = match.group(2)
+match = re.search('^r([0-9]+)$', repo)
+if match == None:
+	error("Invalid repository")
+repoid = match.group(1)
 
-$git_commands = "git-upload-pack|git-receive-pack|git-upload-archive";
-if (!preg_match("/^($git_commands) '(.*?)(\.git)?'$/", $soc, $matches)) {
-	error("Invalid git command");
-}
+if userid != 0:
+	cursor = dbc.cursor()
+	cursor.execute("""SELECT can_write FROM proj_permissions
+		WHERE proj_id = %s AND user_id = %s""", (repoid, userid))
+	result = cursor.fetchone()
+	write = verb.find('upload') != -1
+	if result == None or (write and result[0] == 0):
+		error('not authorized (or wrong repository)')
 
-$verb = $matches[1];
-$repo_name = $matches[2];
-if (!preg_match('/^r([0-9]+)$/', $repo_name, $matches)) {
-	error("Invalid repository");
-}
-$repo_id = $matches[1];
-
-if ($user_id != 0) {
-	check_permissions($repo_id, $user_id, strpos($verb, 'upload') !== false);
-}
-
-putenv("SCIGIT_USER_ID=$user_id");
-pcntl_exec("/usr/bin/git", array("shell", "-c", "$verb 'repositories/$repo_name'"));
+os.environ['SCIGIT_USER_ID'] = str(userid)
+os.system("/usr/bin/git shell -c \"%s 'repositories/%s'\"" % (verb, repo))
