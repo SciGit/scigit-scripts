@@ -42,11 +42,18 @@ repoid = match.group(1)
 
 if userid != 0:
 	cursor = dbc.cursor()
+	cursor.execute("SELECT public FROM projects WHERE id = %s", (repoid))
+	project = cursor.fetchone()
+	if project == None:
+		error('repository does not exist')
+
+	cursor = dbc.cursor()
 	cursor.execute("""SELECT can_write FROM proj_permissions
 		WHERE proj_id = %s AND user_id = %s""", (repoid, userid))
 	result = cursor.fetchone()
 	write = verb.find('upload') != -1
-	if result == None or (write and result[0] == 0):
+	if write and (result == None or result[0] == 0) or \
+		 (result == None and project[0] == 0):
 		error('not authorized (or wrong repository)')
 
 os.environ['SCIGIT_USER_ID'] = str(userid)
