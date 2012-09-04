@@ -1,7 +1,6 @@
 #!/usr/bin/python27
 
-import sys
-sys.path.append('gen-py/')
+import os, sys
 
 from scigit import RepositoryManager
 from scigit.ttypes import *
@@ -11,7 +10,7 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
 
-import os, shutil
+import shutil
 import socket
 import argparse
 import MySQLdb
