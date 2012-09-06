@@ -28,6 +28,8 @@ if userid != 0:
 		error('Permission denied (publickey)')
 
 soc = os.getenv('SSH_ORIGINAL_COMMAND')
+if soc == None:
+	error("Shell access is not supported")
 git_commands = 'git-upload-pack|git-receive-pack|git-upload-archive'
 match = re.search("^(%s) '(.*?)(\.git)?'$" % git_commands, soc)
 if match == None:
