@@ -16,7 +16,7 @@ import argparse
 import MySQLdb
 
 class RepositoryManagerHandler:
-    HOME_DIR = '/home'
+	HOME_DIR = '/home'
 	SCIGIT_DIR = '/var/scigit'
 	GIT_REPO_DIR = HOME_DIR + '/git/repositories'
 	SCIGIT_REPO_DIR = '/var/scigit/repos'
