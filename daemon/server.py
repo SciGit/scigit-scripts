@@ -1,4 +1,4 @@
-#!/usr/bin/python27
+#!/usr/bin/python2.7
 
 import os, sys
 
@@ -16,8 +16,9 @@ import argparse
 import MySQLdb
 
 class RepositoryManagerHandler:
+    HOME_DIR = '/home';
 	SCIGIT_DIR = '/var/scigit'
-	GIT_REPO_DIR = '/home/git/repositories'
+	GIT_REPO_DIR = HOME_DIR + '/git/repositories'
 	SCIGIT_REPO_DIR = '/var/scigit/repos'
 	DELETED_THRESHOLD = 100 # after N deletions, regenerate authorized_keys
 
@@ -50,7 +51,7 @@ class RepositoryManagerHandler:
 		cursor.execute('SELECT id, user_id, key_type, public_key FROM user_pub_keys')
 
 		lines = []
-		self_key_file = open('/home/git/.ssh/id_rsa.pub', 'r')
+		self_key_file = open(HOME_DIR + '/git/.ssh/id_rsa.pub', 'r')
 		lines.append(self.getAuthKeyCommand(0, 0, self_key_file.readline().strip()))
 		self_key_file.close()
 
@@ -60,12 +61,12 @@ class RepositoryManagerHandler:
 			keytype = row[2]
 			publickey = row[3]
 			lines.append(self.getAuthKeyCommand(userid, id, keytype + ' ' + publickey))
-		ak_file = open('/home/git/.ssh/authorized_keys', 'w')
+		ak_file = open(HOME_DIR + '/git/.ssh/authorized_keys', 'w')
 		ak_file.write('\n'.join(lines) + '\n')
 
 	def addPublicKey(self, keyid, userid, publicKey):
 		self.log('addPublicKey: %d' % userid)
-		ak_file = open('/home/git/.ssh/authorized_keys', 'a')
+		ak_file = open(HOME_DIR + '/git/.ssh/authorized_keys', 'a')
 		ak_file.write(self.getAuthKeyCommand(userid, keyid, publicKey) + '\n')
 
 	def deletePublicKey(self, keyid, userid, publicKey):
