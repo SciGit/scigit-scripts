@@ -1,5 +1,6 @@
 #!/usr/bin/python27
 # Check that the commit file sizes meet the limits.
+# Also, deny non-fast-forward pushes and merge commits.
 
 import os, sys
 import subprocess
@@ -8,21 +9,33 @@ def error(msg):
 	sys.stderr.write("scigit: %s\n" % msg)
 	sys.exit(1)
 
+# The local git user can do whatever.
+user_id = int(os.environ['SCIGIT_USER_ID'])
+if user_id == 0:
+	sys.exit(0)
+
 for line in sys.stdin.readlines():
 	old, new, ref = line.split()
 	if ref != 'refs/heads/master':
 		error('branches are not supported')
+
+	if subprocess.check_output(
+			['git', 'log', '--merges', new]) != '':
+		error('merges are not supported')
 
 	args = []
 	if old.count('0') == len(old):
 		args = ['git', 'log', '--pretty=%H', new]
 	else:
 		args = ['git', 'log', '--pretty=%H', old + '..' + new]
+		base = subprocess.check_output(['git', 'merge-base', old, new]).strip()
+		if base != old:
+			error('non-fast-forwards not supported')
 	commits = subprocess.check_output(args).split()
 
+	total_size = 0
 	for commit in commits:
 		output = subprocess.check_output(['git', 'ls-tree', '-lr', commit])
-		total_size = 0
 		for file in output.strip().splitlines():
 			_, type, _, size, _ = file.split(None, 4)
 			if type == 'blob':
