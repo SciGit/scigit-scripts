@@ -1,6 +1,7 @@
 #!/usr/bin/python2.7
 
 import os, sys
+import subprocess
 
 from scigit import RepositoryManager
 from scigit.ttypes import *
@@ -51,7 +52,7 @@ class RepositoryManagerHandler:
 		cursor.execute('SELECT id, user_id, key_type, public_key FROM user_pub_keys')
 
 		lines = []
-		self_key_file = open(HOME_DIR + '/git/.ssh/id_rsa.pub', 'r')
+		self_key_file = open(self.HOME_DIR + '/git/.ssh/id_rsa.pub', 'r')
 		lines.append(self.getAuthKeyCommand(0, 0, self_key_file.readline().strip()))
 		self_key_file.close()
 
@@ -61,12 +62,12 @@ class RepositoryManagerHandler:
 			keytype = row[2]
 			publickey = row[3]
 			lines.append(self.getAuthKeyCommand(userid, id, keytype + ' ' + publickey))
-		ak_file = open(HOME_DIR + '/git/.ssh/authorized_keys', 'w')
+		ak_file = open(self.HOME_DIR + '/git/.ssh/authorized_keys', 'w')
 		ak_file.write('\n'.join(lines) + '\n')
 
 	def addPublicKey(self, keyid, userid, publicKey):
 		self.log('addPublicKey: %d' % userid)
-		ak_file = open(HOME_DIR + '/git/.ssh/authorized_keys', 'a')
+		ak_file = open(self.HOME_DIR + '/git/.ssh/authorized_keys', 'a')
 		ak_file.write(self.getAuthKeyCommand(userid, keyid, publicKey) + '\n')
 
 	def deletePublicKey(self, keyid, userid, publicKey):
@@ -89,6 +90,22 @@ class RepositoryManagerHandler:
 			}
 			config_commands = '; '.join(['git config %s %s' % (key, config[key]) for key in config])
 			os.system('cd %s; git init --bare; %s' % (dir, config_commands))
+			# Clone the repo locally and create an empty commit.
+			os.chdir(self.SCIGIT_REPO_DIR)
+			reponame = 'r' + str(repoid)
+			subprocess.check_output(
+					['env', '-i', 'git', 'clone', 'git@localhost:%s' % reponame])
+			os.chdir(reponame)
+			subprocess.check_output(
+					['env', '-i', 'git', 'config', 'core.fileMode', 'false'])
+			subprocess.check_output(
+					['git', 'commit', '--allow-empty', '-m', 'Initial commit'])
+			subprocess.check_output(
+					['env', '-i', 'git', 'push', 'origin', 'master'])
+			subprocess.check_output(
+					['env', '-i', 'chmod', '755', '-R', '%s/%s' %
+							(self.SCIGIT_REPO_DIR, reponame)])
+			# Add our custom hooks.
 			os.symlink('%s/hooks/pre-receive' % self.SCIGIT_DIR, '%s/hooks/pre-receive' % dir)
 			os.symlink('%s/hooks/post-receive' % self.SCIGIT_DIR, '%s/hooks/post-receive' % dir)
 
@@ -100,6 +117,14 @@ class RepositoryManagerHandler:
 			# shutil.rmtree(dir)
 			# shutil.rmtree('%s/r%d.git' % (self.SCIGIT_REPO_DIR, repoid))
 			return
+
+# Make sure I'm the git user.
+if subprocess.check_output('whoami').strip() != 'git':
+	print 'Must be run as the git user.'
+	exit(1)
+
+# Make sure git ident is set.
+subprocess.check_output(['git', 'config', '--global', 'user.name', 'git'])
 
 parser = argparse.ArgumentParser(description='Manages SciGit repositories. Please run under the user \'git\'.')
 parser.add_argument('--port', default=9090)
