@@ -90,6 +90,9 @@ class RepositoryManagerHandler:
 			}
 			config_commands = '; '.join(['git config %s %s' % (key, config[key]) for key in config])
 			os.system('cd %s; git init --bare; %s' % (dir, config_commands))
+			# Add our custom hooks.
+			os.symlink('%s/hooks/pre-receive' % self.SCIGIT_DIR, '%s/hooks/pre-receive' % dir)
+			os.symlink('%s/hooks/post-receive' % self.SCIGIT_DIR, '%s/hooks/post-receive' % dir)
 			# Clone the repo locally and create an empty commit.
 			os.chdir(self.SCIGIT_REPO_DIR)
 			reponame = 'r' + str(repoid)
@@ -105,9 +108,6 @@ class RepositoryManagerHandler:
 			subprocess.check_output(
 					['env', '-i', 'chmod', '755', '-R', '%s/%s' %
 							(self.SCIGIT_REPO_DIR, reponame)])
-			# Add our custom hooks.
-			os.symlink('%s/hooks/pre-receive' % self.SCIGIT_DIR, '%s/hooks/pre-receive' % dir)
-			os.symlink('%s/hooks/post-receive' % self.SCIGIT_DIR, '%s/hooks/post-receive' % dir)
 
 	def deleteRepository(self, repoid):
 		self.log('deleteRepository: %d' % repoid)
