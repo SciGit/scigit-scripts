@@ -42,7 +42,7 @@ for line in sys.stdin.readlines():
 			(%s, %s, %s, %s, %s)""", (repoid, userid, msg, hash, date))
 		change_id = cursor.lastrowid
 		cursor.execute("""INSERT INTO email_queue
-			(change_id) VALUES (%d)""", (change_id))
+			(change_id) VALUES (%s)""", (change_id))
 		dbc.commit()
 
 # Pull into local accessible repository
