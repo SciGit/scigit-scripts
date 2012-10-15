@@ -40,7 +40,7 @@ for line in sys.stdin.readlines():
 		cursor.execute("""INSERT INTO proj_changes
 			(proj_id, user_id, commit_msg, commit_hash, commit_ts) VALUES
 			(%s, %s, %s, %s, %s)""", (repoid, userid, msg, hash, date))
-        change_id = cursor.lastrowid
+		change_id = cursor.lastrowid
 		cursor.execute("""INSERT INTO email_queue
 			(change_id) VALUES (%d)""", (change_id))
 		dbc.commit()
