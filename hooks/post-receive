@@ -6,8 +6,8 @@ import subprocess
 import MySQLdb
 
 def error(msg):
-	sys.stderr.write("scigit: %s\n" % msg)
-	sys.exit(1)
+  sys.stderr.write("scigit: %s\n" % msg)
+  sys.exit(1)
 
 dbc = MySQLdb.connect(user='scigit', passwd='scigit', db='scigit')
 
@@ -17,47 +17,52 @@ userid = int(os.getenv('SCIGIT_USER_ID'))
 # Get the last saved commit
 cursor = dbc.cursor()
 cursor.execute("""SELECT commit_hash FROM proj_changes
-	WHERE proj_id = %s ORDER BY id DESC LIMIT 1""", (repoid,))
+  WHERE proj_id = %s ORDER BY id DESC LIMIT 1""", (repoid,))
 result = cursor.fetchone()
 old = result[0] if result != None else ''
 
 # Insert new commits into database
 for line in sys.stdin.readlines():
-	_, new, ref = line.split()
-	if ref != 'refs/heads/master':
-		error('branches are not supported')
+  _, new, ref = line.split()
+  if ref != 'refs/heads/master':
+    error('branches are not supported')
 
-	args = []
-	if old.count('0') == len(old):
-		args = ['git', 'log', '--pretty=%H %at %s', new]
-	else:
-		args = ['git', 'log', '--pretty=%H %at %s', old + '..' + new]
-	commits = subprocess.check_output(args).splitlines()
+  args = []
+  first = False
+  if old.count('0') == len(old):
+    args = ['git', 'log', '--pretty=%H %at %s', new]
+    first = True
+  else:
+    args = ['git', 'log', '--pretty=%H %at %s', old + '..' + new]
+  commits = subprocess.check_output(args).splitlines()
 
-	for commit in reversed(commits):
-		hash, date, msg = commit.split(None, 2)
-		cursor = dbc.cursor()
-		cursor.execute("""INSERT INTO proj_changes
-			(proj_id, user_id, commit_msg, commit_hash, commit_ts) VALUES
-			(%s, %s, %s, %s, %s)""", (repoid, userid, msg, hash, date))
-		change_id = cursor.lastrowid
-		cursor.execute("""INSERT INTO email_queue
-			(change_id) VALUES (%s)""", (change_id))
-		dbc.commit()
+  for commit in reversed(commits):
+    hash, date, msg = commit.split(None, 2)
+    cursor = dbc.cursor()
+    cursor.execute("""INSERT INTO proj_changes
+      (proj_id, user_id, commit_msg, commit_hash, commit_ts) VALUES
+      (%s, %s, %s, %s, %s)""", (repoid, userid, msg, hash, date))
+    dbc.commit()
+    if not first:
+      change_id = cursor.lastrowid
+      cursor.execute("""INSERT INTO email_queue
+        (change_id) VALUES (%s)""", (change_id))
+      dbc.commit()
+    first = False
 
 # Pull into local accessible repository
 repodir = '/var/scigit/repos'
 os.chdir(repodir)
 reponame = 'r' + str(repoid)
 if os.path.isdir(reponame):
-	os.chdir(reponame)
-	subprocess.check_output(
-			['env', '-i', 'git', 'pull'], stderr=subprocess.STDOUT)
+  os.chdir(reponame)
+  subprocess.check_output(
+      ['env', '-i', 'git', 'pull'], stderr=subprocess.STDOUT)
 else:
-	subprocess.check_output(
-			['env', '-i', 'git', 'clone', 'git@localhost:%s' % reponame])
-	os.chdir(reponame)
-	subprocess.check_output(
-			['env', '-i', 'git', 'config', 'core.fileMode', 'false'])
+  subprocess.check_output(
+      ['env', '-i', 'git', 'clone', 'git@localhost:%s' % reponame])
+  os.chdir(reponame)
+  subprocess.check_output(
+      ['env', '-i', 'git', 'config', 'core.fileMode', 'false'])
 subprocess.check_output(
-		['env', '-i', 'chmod', '755', '-R', '%s/%s' % (repodir, reponame)])
+    ['env', '-i', 'chmod', '755', '-R', '%s/%s' % (repodir, reponame)])
