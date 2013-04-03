@@ -23,7 +23,7 @@ if userid != 0:
 	pkeyid = int(sys.argv[2])
 	cursor = dbc.cursor()
 	cursor.execute("""SELECT id FROM user_pub_keys
-		WHERE id = %s AND user_id = %s""", (pkeyid, userid))
+		WHERE id = %s AND user_id = %s AND enabled = 1""", (pkeyid, userid))
 	if cursor.fetchone() == None:
 		error('Permission denied (publickey)')
 

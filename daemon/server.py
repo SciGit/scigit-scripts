@@ -49,6 +49,8 @@ class RepositoryManagerHandler:
 
 	def updateKeys(self):
 		cursor = self.dbc.cursor()
+		cursor.execute('DELETE FROM user_pub_keys WHERE enabled = 0')
+		self.dbc.commit()
 		cursor.execute('SELECT id, user_id, key_type, public_key FROM user_pub_keys')
 
 		lines = []
