@@ -2,6 +2,7 @@
 
 import os, sys
 import subprocess
+from os.path import expanduser
 
 from scigit import RepositoryManager
 from scigit.ttypes import *
@@ -17,9 +18,9 @@ import argparse
 import MySQLdb
 
 class RepositoryManagerHandler:
-  HOME_DIR = '/home'
+  HOME_DIR = expanduser('~git')
   SCIGIT_DIR = '/var/scigit'
-  GIT_REPO_DIR = HOME_DIR + '/git/repositories'
+  GIT_REPO_DIR = HOME_DIR + '/repositories'
   SCIGIT_REPO_DIR = '/var/scigit/repos'
   DELETED_THRESHOLD = 100 # after N deletions, regenerate authorized_keys
 
@@ -44,7 +45,7 @@ class RepositoryManagerHandler:
 
   def getAuthKeyCommand(self, userid, keyid, publickey):
     options = 'no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty'
-    return 'command="/usr/local/bin/scigit-shell u%d %d",%s %s' %\
+    return 'command="/var/scigit/scigit-shell u%d %d",%s %s' %\
           (userid, keyid, options, publickey)
 
   def updateKeys(self):
@@ -54,7 +55,7 @@ class RepositoryManagerHandler:
     cursor.execute('SELECT id, user_id, key_type, public_key FROM user_public_keys')
 
     lines = []
-    self_key_file = open(self.HOME_DIR + '/git/.ssh/id_rsa.pub', 'r')
+    self_key_file = open(self.HOME_DIR + '/.ssh/id_rsa.pub', 'r')
     lines.append(self.getAuthKeyCommand(0, 0, self_key_file.readline().strip()))
     self_key_file.close()
 
@@ -64,12 +65,12 @@ class RepositoryManagerHandler:
       keytype = row[2]
       publickey = row[3]
       lines.append(self.getAuthKeyCommand(userid, id, keytype + ' ' + publickey))
-    ak_file = open(self.HOME_DIR + '/git/.ssh/authorized_keys', 'w')
+    ak_file = open(self.HOME_DIR + '/.ssh/authorized_keys', 'w')
     ak_file.write('\n'.join(lines) + '\n')
 
   def addPublicKey(self, keyid, userid, publicKey):
     self.log('addPublicKey: %d' % userid)
-    ak_file = open(self.HOME_DIR + '/git/.ssh/authorized_keys', 'a')
+    ak_file = open(self.HOME_DIR + '/.ssh/authorized_keys', 'a')
     ak_file.write(self.getAuthKeyCommand(userid, keyid, publicKey) + '\n')
 
   def deletePublicKey(self, keyid, userid, publicKey):
@@ -108,7 +109,7 @@ class RepositoryManagerHandler:
       subprocess.check_output(
           ['env', '-i', 'git', 'push', 'origin', 'master'])
       subprocess.check_output(
-          ['env', '-i', 'chmod', '755', '-R', '%s/%s' %
+          ['env', '-i', 'chmod', '-R', '755', '%s/%s' %
               (self.SCIGIT_REPO_DIR, reponame)])
 
   def deleteRepository(self, repoid):
