@@ -1,0 +1,5 @@
+To install:
+- Clone this repository into /var/scigit/
+- Put init.d/scigit into the /etc/init.d/scigit folder
+- Generate a public key for the git user
+- Execute /etc/init.d/scigit start/restart.

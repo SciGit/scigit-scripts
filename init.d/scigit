@@ -1,0 +1,32 @@
+#!/bin/sh
+# chkconfig: 2345 99 99
+# description: Launches SciGit repository manager daemon.
+
+. /etc/rc.d/init.d/functions
+
+start_something() {
+    daemon --user git 'nohup /var/scigit/daemon/server.py --refresh &'
+}
+
+stop_something() {
+    killall server.py
+}
+
+case "$1" in
+    start)
+      start_something
+    ;;
+    stop)
+      stop_something
+    ;;
+    restart|force-reload)
+      stop_something
+      start_something
+    ;;
+    *)
+      echo "missing parameter start | stop | restart"
+    exit 1
+    ;;
+esac
+
+exit 0
