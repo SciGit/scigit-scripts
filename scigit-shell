@@ -5,11 +5,13 @@ import re
 import subprocess
 import MySQLdb
 
+from config import config
+
 def error(msg):
   sys.stderr.write("scigit: %s\n" % msg)
   sys.exit(1)
 
-dbc = MySQLdb.connect(user='scigit', passwd='scigit', db='rails')
+dbc = MySQLdb.connect(user=config.user, passwd=config.passwd, db=config.db)
 
 if len(sys.argv) != 3:
   error('invalid arguments')

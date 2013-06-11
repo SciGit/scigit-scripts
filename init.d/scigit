@@ -2,14 +2,23 @@
 # chkconfig: 2345 99 99
 # description: Launches SciGit repository manager daemon.
 
-. /etc/rc.d/init.d/functions
+. /lib/lsb/init-functions
+
+NAME=server.py
+PIDFILE=/var/run/$NAME.pid
+DAEMON=/var/scigit/daemon/$NAME
+DAEMON_OPTS="--refresh"
 
 start_something() {
-    daemon --user git 'nohup /var/scigit/daemon/server.py --refresh &'
+    echo "Starting daemon: $NAME"
+    start-stop-daemon --start --chuid git --quiet --background --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS
+    echo "."
 }
 
 stop_something() {
+    echo "Stopping daemon: $NAME"
     killall server.py
+    echo "."
 }
 
 case "$1" in
