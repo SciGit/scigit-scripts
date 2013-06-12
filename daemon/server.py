@@ -107,10 +107,8 @@ class RepositoryManagerHandler:
       # Clone the repo locally and create an empty commit.
       os.chdir(self.SCIGIT_REPO_DIR)
       reponame = 'r' + str(repoid)
-      print reponame
-      print subprocess.check_output(
+      subprocess.check_output(
           ['env', '-i', 'git', 'clone', 'git@localhost:%s' % reponame])
-      print self.SCIGIT_REPO_DIR
       os.chdir(reponame)
       subprocess.check_output(
           ['env', '-i', 'git', 'config', 'core.fileMode', 'false'])
