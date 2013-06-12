@@ -9,28 +9,28 @@ PIDFILE=/var/run/$NAME.pid
 DAEMON=/var/scigit/daemon/$NAME
 DAEMON_OPTS="--refresh"
 
-start_something() {
+start_scigit() {
     echo "Starting daemon: $NAME"
     start-stop-daemon --start --chuid git --quiet --background --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS
     echo "."
 }
 
-stop_something() {
+stop_scigit() {
     echo "Stopping daemon: $NAME"
     killall server.py
     echo "."
 }
 
 case "$1" in
-    start)
-      start_something
+    start|"")
+      start_scigit
     ;;
     stop)
-      stop_something
+      stop_scigit
     ;;
-    restart|force-reload)
-      stop_something
-      start_something
+    restart|reload|force-reload)
+      stop_scigit
+      start_scigit
     ;;
     *)
       echo "missing parameter start | stop | restart"

@@ -1,0 +1,35 @@
+#!/bin/sh
+# chkconfig: 2345 99 99
+# description: Launches SciGit repository manager daemon.
+
+. /lib/lsb/init-functions
+
+NAME=nginx
+DAEMON=/etc/nginx/sbin/nginx
+
+start_nginx() {
+    `$DAEMON`
+}
+
+stop_nginx() {
+    pkill $NAME
+}
+
+case "$1" in
+    start|"")
+        start_nginx
+    ;;
+    stop)
+        stop_nginx
+    ;;
+    restart|reload|force-reload)
+        stop_nginx
+        start_nginx
+    ;;
+    *)
+        echo "missing parameter start | stop | restart"
+    exit 1
+    ;;
+esac
+
+exit 0
