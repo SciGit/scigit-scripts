@@ -1,41 +1,52 @@
 #!/bin/sh
-# chkconfig: 2345 99 99
-# description: Launches SciGit repository manager daemon.
 
-. /lib/lsb/init-functions
+# Add to defaults by running:
+#  sudo update-rc.d scigit defaults
 
+set -e
+
+# Must be a valid filename
 NAME=server.py
-PIDFILE=/var/run/$NAME.pid
-DAEMON=/var/scigit/daemon/$NAME
+#/var/run must be writable by your user
+PIDFILE=/var/run/scigit.pid
+DAEMON="/var/scigit/daemon/server.py"
 DAEMON_OPTS="--refresh"
+USER=git
 
-start_scigit() {
-    echo "Starting daemon: $NAME"
-    start-stop-daemon --start --chuid git --quiet --background --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS
-    echo "."
+APPDIR=/var/scigit/daemon
+
+start() {
+	start-stop-daemon --background --start --chdir $APPDIR --quiet --chuid $USER --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS
 }
 
-stop_scigit() {
-    echo "Stopping daemon: $NAME"
-    killall server.py
-    echo "."
+stop() {
+	# XXX: Find a better way to do this.
+	# This launches a sub process so start-stop-daemon can't follwo it correctly. We have to use pkill instead.
+	#start-stop-daemon --stop --chdir $APPDIR --quiet --chuid $USER --oknodo --retry 30 --pidfile $PIDFILE
+	pkill server.py
 }
 
 case "$1" in
-    start|"")
-      start_scigit
-    ;;
-    stop)
-      stop_scigit
-    ;;
-    restart|reload|force-reload)
-      stop_scigit
-      start_scigit
-    ;;
-    *)
-      echo "missing parameter start | stop | restart"
-    exit 1
-    ;;
+  start)
+        echo -n "Starting daemon: "$NAME
+	start
+        echo "."
+	;;
+  stop)
+        echo -n "Stopping daemon: "$NAME
+	stop
+        echo "."
+	;;
+  restart)
+        echo -n "Restarting daemon: "$NAME
+	stop
+	start
+	echo "."
+	;;
+
+  *)
+	echo "Usage: "$1" {start|stop|restart}"
+	exit 1
 esac
 
 exit 0
