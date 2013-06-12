@@ -1,15 +1,17 @@
-#!/usr/bin/python27
+#!/usr/bin/python2.7
 # Add the commit to the scigit database and update the usable repo.
 
 import os, sys
 import subprocess
 import MySQLdb
 
+import scigitconfig as cfg
+
 def error(msg):
   sys.stderr.write("scigit: %s\n" % msg)
   sys.exit(1)
 
-dbc = MySQLdb.connect(user='scigit', passwd='scigit', db='rails')
+dbc = MySQLdb.connect(user=cfg.user, passwd=cfg.passwd, db=cfg.db)
 
 repoid = int(subprocess.check_output(['git', 'config', 'scigit.repo.id']))
 userid = int(os.getenv('SCIGIT_USER_ID'))

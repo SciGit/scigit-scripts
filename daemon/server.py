@@ -7,8 +7,7 @@ from os.path import expanduser
 from scigit import RepositoryManager
 from scigit.ttypes import *
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'config'))
-import config
+import scigitconfig as cfg
 
 from thrift.transport import TSocket
 from thrift.transport import TTransport
@@ -28,7 +27,7 @@ class RepositoryManagerHandler:
   DELETED_THRESHOLD = 100 # after N deletions, regenerate authorized_keys
 
   def __init__(self, log_file = ''):
-    self.dbc = MySQLdb.connect(user=config.user, passwd=config.passwd, db=config.db)
+    self.dbc = MySQLdb.connect(user=cfg.user, passwd=cfg.passwd, db=cfg.db)
     self.log_file = None
     self.deletedkeys = 0
     if log_file != '':

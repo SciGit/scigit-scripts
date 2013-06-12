@@ -1,5 +1,5 @@
 To install:
 - Clone this repository into /var/scigit/
 - Put init.d/scigit into the /etc/init.d/scigit folder
-- Generate a public key for the git user
+- Symlink config/config.py into /usr/lib/python2.7
 - Execute /etc/init.d/scigit start/restart.
