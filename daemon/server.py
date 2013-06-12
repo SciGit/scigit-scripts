@@ -1,6 +1,6 @@
 #!/usr/bin/python2.7
 
-import os, sys
+import os, sys, stat
 import subprocess
 from os.path import expanduser
 
@@ -58,7 +58,10 @@ class RepositoryManagerHandler:
     cursor.execute('SELECT id, user_id, key_type, public_key FROM user_public_keys')
 
     lines = []
-    self_key_file = open(self.HOME_DIR + '/.ssh/id_rsa.pub', 'r')
+    key_path = os.path.join(self.HOME_DIR, '.ssh', 'id_rsa')
+    if not os.path.isfile(key_path):
+      os.system('ssh-keygen -t rsa -P "" -f %s' % key_path)
+    self_key_file = open(key_path + '.pub', 'r')
     lines.append(self.getAuthKeyCommand(0, 0, self_key_file.readline().strip()))
     self_key_file.close()
 
@@ -68,12 +71,15 @@ class RepositoryManagerHandler:
       keytype = row[2]
       publickey = row[3]
       lines.append(self.getAuthKeyCommand(userid, id, keytype + ' ' + publickey))
-    ak_file = open(self.HOME_DIR + '/.ssh/authorized_keys', 'w')
+    ak_path = os.path.join(self.HOME_DIR, '.ssh', 'authorized_keys')
+    ak_file = open(ak_path, 'w')
     ak_file.write('\n'.join(lines) + '\n')
+    os.chmod(ak_path, stat.S_IREAD | stat.S_IWRITE)
 
   def addPublicKey(self, keyid, userid, publicKey):
     self.log('addPublicKey: %d' % userid)
-    ak_file = open(self.HOME_DIR + '/.ssh/authorized_keys', 'a')
+    ak_path = os.path.join(self.HOME_DIR, '.ssh', 'authorized_keys')
+    ak_file = open(ak_path, 'a')
     ak_file.write(self.getAuthKeyCommand(userid, keyid, publicKey) + '\n')
 
   def deletePublicKey(self, keyid, userid, publicKey):
