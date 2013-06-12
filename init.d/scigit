@@ -16,6 +16,7 @@ USER=git
 APPDIR=/var/scigit/daemon
 
 start() {
+  sleep 2s
 	start-stop-daemon --background --start --chdir $APPDIR --quiet --chuid $USER --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS
 }
 
