@@ -76,7 +76,7 @@ DAEMON=/etc/nginx/sbin/nginx
 PS="nginx"
 PIDNAME="nginx"				#lets you do $PS-slave
 PIDFILE=$PIDNAME.pid                    #pid file
-PIDSPATH=/var/run
+PIDSPATH=/etc/nginx/logs
  
 DESCRIPTION="Nginx Server..."
  
@@ -219,9 +219,6 @@ start() {
 stop() {
 	log_daemon_msg "Stopping $DESCRIPTION"
 
-	pkill nginx
-	return
- 
 	isRunning
 	isAlive=$?
         if [ "${isAlive}" -eq $TRUE ]; then
