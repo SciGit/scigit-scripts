@@ -24,7 +24,7 @@ class RepositoryManagerHandler:
 	DELETED_THRESHOLD = 100 # after N deletions, regenerate authorized_keys
 
 	def __init__(self, log_file = ''):
-		self.dbc = MySQLdb.connect(user='scigit', passwd='scigit', db='scigit')
+		self.dbc = MySQLdb.connect(user='scigit', passwd='RgnWvOwP2lP', db='scigit')
 		self.log_file = None
 		self.deletedkeys = 0
 		if log_file != '':
