@@ -1,65 +1,67 @@
-#!/usr/bin/python27
+#!/usr/bin/python2.7
 
 import os, sys
 import re
 import subprocess
 import MySQLdb
 
-def error(msg):
-	sys.stderr.write("scigit: %s\n" % msg)
-	sys.exit(1)
+import scigitconfig as cfg
 
-dbc = MySQLdb.connect(user='scigit', passwd='scigit', db='scigit')
+def error(msg):
+  sys.stderr.write("scigit: %s\n" % msg)
+  sys.exit(1)
+
+dbc = MySQLdb.connect(user=cfg.user, passwd=cfg.passwd, db=cfg.db)
 
 if len(sys.argv) != 3:
-	error('invalid arguments')
+  error('invalid arguments')
 user = sys.argv[1]
 match = re.search('^u([0-9]+)$', user)
 if match == None:
-	error('invalid user')
+  error('invalid user')
 userid = int(match.group(1))
 
 if userid != 0:
-	pkeyid = int(sys.argv[2])
-	cursor = dbc.cursor()
-	cursor.execute("""SELECT id FROM user_pub_keys
-		WHERE id = %s AND user_id = %s AND enabled = 1""", (pkeyid, userid))
-	if cursor.fetchone() == None:
-		error('Permission denied (publickey)')
+  pkeyid = int(sys.argv[2])
+  cursor = dbc.cursor()
+  cursor.execute("""SELECT id FROM user_public_keys
+    WHERE id = %s AND user_id = %s AND enabled = 1""", (pkeyid, userid))
+  if cursor.fetchone() == None:
+    error('Permission denied (publickey)')
 
 soc = os.getenv('SSH_ORIGINAL_COMMAND')
 if soc == None:
-	error("Shell access is not supported")
+  error("Shell access is not supported")
 git_commands = 'git-upload-pack|git-receive-pack|git-upload-archive'
 match = re.search("^(%s) '(.*?)(\.git)?'$" % git_commands, soc)
 if match == None:
-	error("Invalid git command")
+  error("Invalid git command")
 
 verb = match.group(1)
 repo = match.group(2)
 match = re.search('^r([0-9]+)$', repo)
 if match == None:
-	error("Invalid repository")
+  error("Invalid repository")
 repoid = match.group(1)
 
 if userid != 0:
-	cursor = dbc.cursor()
-	cursor.execute("SELECT public FROM projects WHERE id = %s", (repoid))
-	project = cursor.fetchone()
-	if project == None:
-		error('repository does not exist')
-	public = project[0] != 0
+  cursor = dbc.cursor()
+  cursor.execute("SELECT public FROM projects WHERE id = %s", (repoid))
+  project = cursor.fetchone()
+  if project == None:
+    error('repository does not exist')
+  public = project[0] != 0
 
-	cursor = dbc.cursor()
-	cursor.execute("""SELECT permission FROM proj_permissions
-		WHERE proj_id = %s AND user_id = %s""", (repoid, userid))
-	result = cursor.fetchone()
-	write = verb.find('upload') == -1
-	# OWNER = 16, ADMIN = 8, WRITE = 4; they OR to 28
-	can_write = (result != None and (result[0] & 28) != 0)
-	if write and not can_write or \
-		 (result == None and not public):
-		error('not authorized (or wrong repository)')
+  cursor = dbc.cursor()
+  cursor.execute("""SELECT permission FROM project_permissions
+    WHERE project_id = %s AND user_id = %s""", (repoid, userid))
+  result = cursor.fetchone()
+  write = verb.find('upload') == -1
+  # 1 = subscriber, 2 = coauthor, 3 = owner
+  can_write = (result != None and result >= 2)
+  if write and not can_write or \
+     (result == None and not public):
+    error('not authorized (or wrong repository)')
 
 os.environ['SCIGIT_USER_ID'] = str(userid)
 subprocess.call(["/usr/bin/git", "shell", "-c", "%s 'repositories/%s'" % (verb, repo)])

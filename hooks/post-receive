@@ -1,23 +1,25 @@
-#!/usr/bin/python27
+#!/usr/bin/python2.7
 # Add the commit to the scigit database and update the usable repo.
 
 import os, sys
 import subprocess
 import MySQLdb
 
+import scigitconfig as cfg
+
 def error(msg):
   sys.stderr.write("scigit: %s\n" % msg)
   sys.exit(1)
 
-dbc = MySQLdb.connect(user='scigit', passwd='scigit', db='scigit')
+dbc = MySQLdb.connect(user=cfg.user, passwd=cfg.passwd, db=cfg.db)
 
 repoid = int(subprocess.check_output(['git', 'config', 'scigit.repo.id']))
 userid = int(os.getenv('SCIGIT_USER_ID'))
 
 # Get the last saved commit
 cursor = dbc.cursor()
-cursor.execute("""SELECT commit_hash FROM proj_changes
-  WHERE proj_id = %s ORDER BY id DESC LIMIT 1""", (repoid,))
+cursor.execute("""SELECT commit_hash FROM project_changes
+  WHERE project_id = %s ORDER BY id DESC LIMIT 1""", (repoid,))
 result = cursor.fetchone()
 old = result[0] if result != None else ''
 
@@ -28,6 +30,7 @@ for line in sys.stdin.readlines():
     error('branches are not supported')
 
   args = []
+  # Don't include the fake initial commit.
   first = False
   if old.count('0') == len(old):
     args = ['git', 'log', '--pretty=%H %at %s', new]
@@ -39,16 +42,15 @@ for line in sys.stdin.readlines():
   for commit in reversed(commits):
     hash, date, msg = commit.split(None, 2)
     cursor = dbc.cursor()
-    cursor.execute("""INSERT INTO proj_changes
-      (proj_id, user_id, commit_msg, commit_hash, commit_ts) VALUES
+    cursor.execute("""INSERT INTO project_changes
+      (project_id, user_id, commit_msg, commit_hash, commit_timestamp) VALUES
       (%s, %s, %s, %s, %s)""", (repoid, userid, msg, hash, date))
-    dbc.commit()
-    if not first:
-      change_id = cursor.lastrowid
-      cursor.execute("""INSERT INTO email_queue
-        (change_id) VALUES (%s)""", (change_id))
-      dbc.commit()
+    #if not first:
+    #  change_id = cursor.lastrowid
+    #  cursor.execute("""INSERT INTO email_queue
+    #    (change_id) VALUES (%s)""", (change_id))
     first = False
+    dbc.commit()
 
 # Pull into local accessible repository
 repodir = '/var/scigit/repos'

@@ -1,0 +1,6 @@
+This is where the parsed docx info + images will be stored.
+
+Directory structure:
+  docstore/r[repo id]/[commit hash]/[file git hash]/
+  - parse.yaml
+  - images/...
