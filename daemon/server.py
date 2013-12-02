@@ -47,7 +47,7 @@ class RepositoryManagerHandler:
 
   def getAuthKeyCommand(self, userid, keyid, publickey):
     options = 'no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty'
-    return 'command="/var/scigit/scigit-shell u%d %d",%s %s' %\
+    return 'command="/var/www/scigit-www/current/scripts/scigit-shell u%d %d",%s %s' %\
           (userid, keyid, options, publickey)
 
   def updateKeys(self):
