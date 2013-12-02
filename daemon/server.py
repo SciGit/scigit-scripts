@@ -7,6 +7,8 @@ from os.path import expanduser
 from scigit import RepositoryManager
 from scigit.ttypes import *
 
+import scigitconfig as cfg
+
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
